@@ -1,102 +1,136 @@
 import pygame
+import random
+
+# Константы
+WINDOW_WIDTH = 800
+WINDOW_HEIGHT = 600
+PLATFORM_WIDTH = 100
+PLATFORM_HEIGHT = 20
+BALL_RADIUS = 10
+BLOCK_WIDTH = (WINDOW_WIDTH - 10) // 10
+BLOCK_HEIGHT = 20
+BLOCKS_PER_ROW = WINDOW_WIDTH // BLOCK_WIDTH
+
+# Цвета
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+
+# Класс для платформы
+class Platform(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.image = pygame.Surface([PLATFORM_WIDTH, PLATFORM_HEIGHT])
+        self.image.fill(BLUE)
+        self.rect = self.image.get_rect()
+        self.rect.x = (WINDOW_WIDTH - PLATFORM_WIDTH) // 2
+        self.rect.y = WINDOW_HEIGHT - PLATFORM_HEIGHT
+
+    def update(self):
+        # Перемещение платформы вместе с курсором мыши
+        pos = pygame.mouse.get_pos()
+        self.rect.x = pos[0] - PLATFORM_WIDTH / 2
+
+        # Ограничение платформы в пределах окна
+        if self.rect.x < 0:
+            self.rect.x = 0
+        if self.rect.right > WINDOW_WIDTH:
+            self.rect.right = WINDOW_WIDTH
+
+# Класс для шарика
+class Ball(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.image = pygame.Surface([BALL_RADIUS * 2, BALL_RADIUS * 2])
+        self.image.fill(RED)
+        self.rect = self.image.get_rect()
+        self.rect.x = WINDOW_WIDTH // 2
+        self.rect.y = WINDOW_HEIGHT // 2
+        self.speed_x = random.choice([-2, 2])
+        self.speed_y = -2
+
+    def update(self):
+        # Обновление позиции шарика
+        self.rect.x += self.speed_x
+        self.rect.y += self.speed_y
+
+        # Отскок шарика от стен
+        if self.rect.x <= 0 or self.rect.right >= WINDOW_WIDTH:
+            self.speed_x = -self.speed_x
+        if self.rect.y <= 0:
+            self.speed_y = -self.speed_y
+
+        # Отскок шарика от платформы
+        if pygame.sprite.collide_rect(self, platform):
+            self.speed_y = -self.speed_y
+
+# Класс для блоков
+class Block(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__()
+        self.image = pygame.Surface([BLOCK_WIDTH, BLOCK_HEIGHT])
+        self.image.fill(GREEN)
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
 
 # Инициализация Pygame
 pygame.init()
 
-# Определение цветов
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
-RED = (255, 0, 0)
-BLUE = (0, 0, 255)
-GREEN = (0, 255, 0)
-YELLOW = (255, 255, 0)
-
-# Определение размеров окна
-WINDOW_WIDTH = 800
-WINDOW_HEIGHT = 600
-
 # Создание окна игры
-size = (WINDOW_WIDTH, WINDOW_HEIGHT)
-screen = pygame.display.set_mode(size)
-pygame.display.set_caption("Arkanoid")
+window = pygame.display.set_mode([WINDOW_WIDTH, WINDOW_HEIGHT])
+pygame.display.set_caption("Арканоид")
 
-# Определение переменных
-ball_radius = 10
-paddle_width = 100
-paddle_height = 10
-paddle_x = (WINDOW_WIDTH - paddle_width) // 2
-paddle_y = WINDOW_HEIGHT - paddle_height - 10
-paddle_speed = 5
-ball_x = WINDOW_WIDTH // 2
-ball_y = WINDOW_HEIGHT // 2
-ball_dx = 3
-ball_dy = -3
-block_width = 60
-block_height = 20
-block_gap = 5
-block_rows = 5
-block_cols = WINDOW_WIDTH // (block_width + block_gap)
-blocks = []
+# Создание спрайтов
+all_sprites = pygame.sprite.Group()
+blocks = pygame.sprite.Group()
+
+# Создание платформы
+platform = Platform()
+all_sprites.add(platform)
+
+# Создание шарика
+ball = Ball()
+all_sprites.add(ball)
 
 # Создание блоков
-for row in range(block_rows):
-    for col in range(block_cols):
-        x = (block_width + block_gap) * col
-        y = (block_height + block_gap) * row
-        blocks.append(pygame.Rect(x, y, block_width, block_height))
+for row in range(5):
+    for col in range(BLOCKS_PER_ROW):
+        block = Block(col * BLOCK_WIDTH, row * BLOCK_HEIGHT)
+        all_sprites.add(block)
+        blocks.add(block)
 
-# Цикл игры
-done = False
+# Главный цикл игры
+running = True
 clock = pygame.time.Clock()
-score = 0
 
-while not done:
-    # Обработка событий
+while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            done = True
+            running = False
 
-    # Обработка движения мыши
-    mouse_x, _ = pygame.mouse.get_pos()
-    paddle_x = mouse_x
+    # Обновление спрайтов
+    all_sprites.update()
 
-    # Движение шарика
-    ball_x += ball_dx
-    ball_y += ball_dy
+    # Отрисовка игровых объектов
+    window.fill(BLACK)
+    all_sprites.draw(window)
 
-    # Обработка столкновения с границами окна
-    if ball_x < ball_radius or ball_x > WINDOW_WIDTH - ball_radius:
-        ball_dx *= -1
-    if ball_y < ball_radius:
-        ball_dy *= -1
-    if ball_y > WINDOW_HEIGHT - ball_radius:
-        done = True  # Игра окончена, если шарик упал за нижнюю границу
+    # Проверка столкновения шарика с блоками
+    collisions = pygame.sprite.spritecollide(ball, blocks, True)
+    if collisions:
+        ball.speed_y = -ball.speed_y
 
-    # Обработка столкновения с платформой
-    if ball_y > paddle_y - ball_radius and paddle_x - ball_radius < ball_x < paddle_x + paddle_width + ball_radius:
-        ball_dy *= -1
-
-    # Обработка столкновений со значениями блоков
-    for block in blocks:
-        if block.collidepoint(ball_x, ball_y):
-            blocks.remove(block)
-            ball_dy *= -1
-            score += 1
-
-    # Заливка фона
-    screen.fill(BLACK)
-
-    # Отрисовка объектов
-    pygame.draw.circle(screen, RED, (ball_x, ball_y), ball_radius)
-    pygame.draw.rect(screen, GREEN, (paddle_x, paddle_y, paddle_width, paddle_height))
-
-    for block in blocks:
-        pygame.draw.rect(screen, BLUE, block)
+    # Проверка окончания игры
+    if ball.rect.y >= WINDOW_HEIGHT:
+        running = False
 
     # Обновление экрана
     pygame.display.flip()
 
-    # Ограничение количества кадров
+    # Ограничение частоты обновления экрана
     clock.tick(60)
 
 # Завершение игры
