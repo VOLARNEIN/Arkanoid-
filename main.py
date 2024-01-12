@@ -86,7 +86,13 @@ pygame.init()
 # Создание окна игры
 window = pygame.display.set_mode([WINDOW_WIDTH, WINDOW_HEIGHT])
 pygame.display.set_caption("Арканоид")
-pygame.draw.rect(window, BLUE,
+
+background_image = pygame.image.load("data/background.png")
+background_surface = pygame.Surface((1024, 720))
+background_image = pygame.transform.scale(background_image, (1024, 720))
+background_surface.blit(background_image, (0, 0))
+
+pygame.draw.rect(window, WHITE,
                  (1024, 0, WINDOW_WIDTH, WINDOW_WIDTH), 0)
 
 # Создание спрайтов
@@ -122,7 +128,7 @@ while running:
     all_sprites.update()
 
     # Отрисовка игровых объектов
-    GAME_ZONE.fill(BLACK)
+    GAME_ZONE.blit(background_surface, (0, 0))
     all_sprites.draw(GAME_ZONE)
 
     # Проверка столкновения шарика с блоками
