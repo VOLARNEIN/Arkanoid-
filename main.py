@@ -9,8 +9,10 @@ PLATFORM_WIDTH = 160
 PLATFORM_HEIGHT = 20
 BALL_RADIUS = 10
 BLOCK_WIDTH = 64
-BLOCK_HEIGHT = 33
+BLOCK_HEIGHT = 34
 BLOCKS_PER_ROW = (WINDOW_WIDTH // BLOCK_WIDTH) - 6
+seconds = 0
+mseconds = 0
 
 # Цвета
 BLACK = (0, 0, 0)
@@ -49,10 +51,13 @@ class Ball(pygame.sprite.Sprite):
         self.image = pygame.Surface([BALL_RADIUS * 2, BALL_RADIUS * 2])
         self.image = pygame.image.load('data/ball.png')  # загрузка картинки "block.png"
         self.rect = self.image.get_rect()
-        self.rect.x = WINDOW_WIDTH // 2
+        self.rect.x = 1024 // 2
         self.rect.y = WINDOW_HEIGHT // 2
-        self.speed_x = random.choice([-2, 2])
-        self.speed_y = -2
+        self.speed_x = random.choice([-1, 1])
+        self.speed_y = -1
+
+        self.time_count = 0
+        self.speed_increase = 0.5
 
     def update(self):
         # Обновление позиции шарика
@@ -60,14 +65,29 @@ class Ball(pygame.sprite.Sprite):
         self.rect.y += self.speed_y
 
         # Отскок шарика от стен
-        if self.rect.x <= 0 or self.rect.right >= 1024:
+        if self.rect.x <= 0 or self.rect.right <= 1024:
             self.speed_x = -self.speed_x
         if self.rect.y <= 0:
             self.speed_y = -self.speed_y
 
         # Отскок шарика от платформы
         if pygame.sprite.collide_rect(self, platform):
-            self.speed_y = -self.speed_y
+            if self.speed_y > 0:  # проверка направления движения шарика, чтобы избежать проваливания через платформу
+                self.speed_y = -self.speed_y
+
+        # Увеличение скорости каждые 20 секунд
+        self.time_count += 1
+        if self.time_count == 1200:  # 1200 кадров = 20 секунды (если кадры обновляются с частотой 60 кадров в секунду)
+            if self.speed_x > 0:
+                self.speed_x += self.speed_increase
+            else:
+                self.speed_x -= self.speed_increase
+            if self.speed_y > 0:
+                self.speed_y += self.speed_increase
+            else:
+                self.speed_y -= self.speed_increase
+
+            self.time_count = 0
 
 
 # Класс для блоков
@@ -85,7 +105,7 @@ pygame.init()
 
 # Создание окна игры
 window = pygame.display.set_mode([WINDOW_WIDTH, WINDOW_HEIGHT])
-pygame.display.set_caption("Арканоид")
+pygame.display.set_caption("Арканоид+")
 
 background_image = pygame.image.load("data/background.png")
 background_surface = pygame.Surface((1024, 720))
@@ -94,6 +114,7 @@ background_surface.blit(background_image, (0, 0))
 
 pygame.draw.rect(window, WHITE,
                  (1024, 0, WINDOW_WIDTH, WINDOW_WIDTH), 0)
+font = pygame.font.Font(None, 36)
 
 # Создание спрайтов
 all_sprites = pygame.sprite.Group()
@@ -127,9 +148,21 @@ while running:
     # Обновление спрайтов
     all_sprites.update()
 
+    # Обновление таймера
+    time = f"{seconds:02}:{mseconds:02}"
+    time_surface = font.render(time, True, BLACK)
+
     # Отрисовка игровых объектов
     GAME_ZONE.blit(background_surface, (0, 0))
+    pygame.draw.rect(window, WHITE, (1024, 0, WINDOW_WIDTH, WINDOW_WIDTH), 0)
+    window.blit(time_surface, (1216 - time_surface.get_width() // 2, 40 - time_surface.get_height() // 2))
     all_sprites.draw(GAME_ZONE)
+
+    # Увеличение секунд и минут таймера
+    mseconds += 1
+    if mseconds == 60:
+        mseconds = 0
+        seconds += 1
 
     # Проверка столкновения шарика с блоками
     collisions = pygame.sprite.spritecollide(ball, blocks, True)
