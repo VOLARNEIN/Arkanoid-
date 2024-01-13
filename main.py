@@ -1,5 +1,8 @@
 import pygame
 import random
+import sqlite3
+
+from pygame.locals import *
 
 # Константы
 WINDOW_WIDTH = 1408
@@ -9,8 +12,9 @@ PLATFORM_WIDTH = 160
 PLATFORM_HEIGHT = 20
 BALL_RADIUS = 10
 BLOCK_WIDTH = 64
-BLOCK_HEIGHT = 34
+BLOCK_HEIGHT = 32
 BLOCKS_PER_ROW = (WINDOW_WIDTH // BLOCK_WIDTH) - 6
+max_speed = 8
 seconds = 0
 mseconds = 0
 
@@ -20,6 +24,7 @@ WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
+GRAY = (128, 128, 128)
 
 
 # Класс для платформы
@@ -53,8 +58,8 @@ class Ball(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = 1024 // 2
         self.rect.y = WINDOW_HEIGHT // 2
-        self.speed_x = random.choice([-1, 1])
-        self.speed_y = -1
+        self.speed_x = random.choice([-1.5, 1.5])
+        self.speed_y = 1.5
 
         self.time_count = 0
         self.speed_increase = 0.5
@@ -64,20 +69,26 @@ class Ball(pygame.sprite.Sprite):
         self.rect.x += self.speed_x
         self.rect.y += self.speed_y
 
-        # Отскок шарика от стен
-        if self.rect.x <= 0 or self.rect.right <= 1024:
-            self.speed_x = -self.speed_x
-        if self.rect.y <= 0:
-            self.speed_y = -self.speed_y
+        # Проверка столкновений с краями окна и их обработка
+        if self.rect.left <= 0:
+            self.rect.left = 0
+            self.speed_x *= -1
+        elif self.rect.right >= 1024:
+            self.rect.right = 1024
+            self.speed_x *= -1
+        if self.rect.top <= 0:
+            self.rect.top = 0
+            self.speed_y *= -1
 
         # Отскок шарика от платформы
         if pygame.sprite.collide_rect(self, platform):
             if self.speed_y > 0:  # проверка направления движения шарика, чтобы избежать проваливания через платформу
                 self.speed_y = -self.speed_y
 
-        # Увеличение скорости каждые 20 секунд
+        # Увеличение скорости каждые 30 секунд
         self.time_count += 1
-        if self.time_count == 1200:  # 1200 кадров = 20 секунды (если кадры обновляются с частотой 60 кадров в секунду)
+        if self.time_count == 1800 and (
+                self.speed_x != max_speed or self.speed_x != -max_speed):  # 1800 кадров = 30 секунды (если кадры обновляются с частотой 60 кадров в секунду)
             if self.speed_x > 0:
                 self.speed_x += self.speed_increase
             else:
@@ -107,15 +118,6 @@ pygame.init()
 window = pygame.display.set_mode([WINDOW_WIDTH, WINDOW_HEIGHT])
 pygame.display.set_caption("Арканоид+")
 
-background_image = pygame.image.load("data/background.png")
-background_surface = pygame.Surface((1024, 720))
-background_image = pygame.transform.scale(background_image, (1024, 720))
-background_surface.blit(background_image, (0, 0))
-
-pygame.draw.rect(window, WHITE,
-                 (1024, 0, WINDOW_WIDTH, WINDOW_WIDTH), 0)
-font = pygame.font.Font(None, 36)
-
 # Создание спрайтов
 all_sprites = pygame.sprite.Group()
 blocks = pygame.sprite.Group()
@@ -136,6 +138,52 @@ for row in range(10):
         all_sprites.add(block)
         blocks.add(block)
 
+# Создание фона
+background_image = pygame.image.load("data/background.png")
+background_image = pygame.transform.scale(background_image, (1024, 720))
+GAME_ZONE.blit(background_image, (0, 0))
+
+pygame.draw.rect(window, WHITE,
+                 (1024, 0, WINDOW_WIDTH, WINDOW_WIDTH), 0)
+font = pygame.font.Font(None, 36)
+
+# Подключение к базе данных
+conn = sqlite3.connect("victorina.db")
+cursor = conn.cursor()
+
+
+# Функция для отображения вопроса и вариантов ответов
+def display_question(question, options):
+    pygame.draw.rect(window, WHITE, (1034, 0, WINDOW_WIDTH, WINDOW_HEIGHT), 0)
+    font = pygame.font.Font(None, 30)
+    question_text = font.render(question, True, BLACK)
+    screen.blit(question_text, (1034, 60))
+
+    option_y = 140
+    for i, option in enumerate(options):
+        option_text = font.render(f"{str(i + 1)}) {option}", True, BLACK)
+        screen.blit(option_text, (1034, option_y))
+        option_y += 50
+
+
+# Функция для получения случайного вопроса из базы данных
+def get_random_question():
+    random_number = random.randint(1, 2)
+    cursor.execute("SELECT * FROM average WHERE number=?", (random_number,))
+    question_row = cursor.fetchone()
+    question = question_row[1]
+    options = question_row[2:6]
+    answer = question_row[6]
+    return question, options, answer
+
+
+score = 0
+question, options, answer = get_random_question()
+display_question(question, options)
+
+# Скрывать курсор мыши
+pygame.mouse.set_visible(False)
+
 # Главный цикл игры
 running = True
 clock = pygame.time.Clock()
@@ -143,6 +191,20 @@ clock = pygame.time.Clock()
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
+            running = False
+
+        if event.type == KEYDOWN and K_1 <= event.key <= K_4:
+            selected_option = int(event.unicode)
+            if selected_option == int(answer):
+                score += 1
+                print("Правильный ответ!")
+            else:
+                print("Неправильный ответ!")
+
+                question, options, answer = get_random_question()
+                display_question(question, options)
+
+        if event.type == KEYDOWN and event.key == K_ESCAPE:
             running = False
 
     # Обновление спрайтов
@@ -153,10 +215,10 @@ while running:
     time_surface = font.render(time, True, BLACK)
 
     # Отрисовка игровых объектов
-    GAME_ZONE.blit(background_surface, (0, 0))
-    pygame.draw.rect(window, WHITE, (1024, 0, WINDOW_WIDTH, WINDOW_WIDTH), 0)
-    window.blit(time_surface, (1216 - time_surface.get_width() // 2, 40 - time_surface.get_height() // 2))
+    GAME_ZONE.blit(background_image, (0, 0))
     all_sprites.draw(GAME_ZONE)
+    pygame.draw.rect(window, WHITE, (1034, 0, WINDOW_WIDTH, 60), 0)
+    window.blit(time_surface, (1226 - time_surface.get_width() // 2, 40 - time_surface.get_height() // 2))
 
     # Увеличение секунд и минут таймера
     mseconds += 1
@@ -174,7 +236,7 @@ while running:
         running = False
 
     # Обновление экрана
-    pygame.display.flip()
+    pygame.display.update()
 
     # Ограничение частоты обновления экрана
     clock.tick(60)
