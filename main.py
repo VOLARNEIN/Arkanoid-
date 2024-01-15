@@ -17,6 +17,8 @@ BLOCKS_PER_ROW = (WINDOW_WIDTH // BLOCK_WIDTH) - 6
 max_speed = 8
 seconds = 0
 mseconds = 0
+ENERGY_MAX = 100
+ENERGY_DECREASE_RATE = 1 / 60 # тк в 1 секунде 60 кадров
 
 # Цвета
 BLACK = (0, 0, 0)
@@ -38,6 +40,7 @@ class Platform(pygame.sprite.Sprite):
         self.rect.y = WINDOW_HEIGHT - PLATFORM_HEIGHT
 
     def update(self):
+        global energy
         # Перемещение платформы вместе с курсором мыши
         pos = pygame.mouse.get_pos()
         self.rect.x = pos[0] - PLATFORM_WIDTH / 2
@@ -147,6 +150,16 @@ pygame.draw.rect(window, WHITE,
                  (1024, 0, WINDOW_WIDTH, WINDOW_WIDTH), 0)
 font = pygame.font.Font(None, 36)
 
+# Позиция и размеры шкалы энергии
+sx = 1034
+sy = 335
+swidth = 364
+sheight = 50
+
+# Размер прогресс-бара (изначально заполненного)
+progress_width = swidth
+energy = ENERGY_MAX
+
 # Подключение к базе данных
 conn = sqlite3.connect("victorina.db")
 cursor = conn.cursor()
@@ -198,9 +211,10 @@ while running:
             if selected_option == int(answer):
                 score += 1
                 print("Правильный ответ!")
+                question, options, answer = get_random_question()
+                display_question(question, options)
             else:
                 print("Неправильный ответ!")
-
                 question, options, answer = get_random_question()
                 display_question(question, options)
 
@@ -211,8 +225,19 @@ while running:
     all_sprites.update()
 
     # Обновление таймера
-    time = f"{seconds:02}:{mseconds:02}"
-    time_surface = font.render(time, True, BLACK)
+    time_surface = font.render(f"{seconds:02}:{mseconds:02}", True, BLACK)
+
+    # Уменьшение energy
+    energy -= ENERGY_DECREASE_RATE
+    if energy < 0:
+        energy = 0
+
+    # Отрисовка шкалы
+    pygame.draw.rect(screen, RED, (sx, sy, swidth, sheight))
+    pygame.draw.rect(screen, GREEN, (sx, sy, progress_width, sheight))
+
+    # Изменение размеров прогресс-бара
+    progress_width = int((energy / ENERGY_MAX) * swidth)
 
     # Отрисовка игровых объектов
     GAME_ZONE.blit(background_image, (0, 0))
