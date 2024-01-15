@@ -1,6 +1,7 @@
 import pygame
 import random
 import sqlite3
+import pygame.mixer
 
 from pygame.locals import *
 
@@ -18,7 +19,7 @@ max_speed = 8
 seconds = 0
 mseconds = 0
 ENERGY_MAX = 100
-ENERGY_DECREASE_RATE = 1 / 60 # тк в 1 секунде 60 кадров
+ENERGY_DECREASE_RATE = 1 / 60  # тк в 1 секунде 60 кадров
 
 # Цвета
 BLACK = (0, 0, 0)
@@ -42,8 +43,9 @@ class Platform(pygame.sprite.Sprite):
     def update(self):
         global energy
         # Перемещение платформы вместе с курсором мыши
-        pos = pygame.mouse.get_pos()
-        self.rect.x = pos[0] - PLATFORM_WIDTH / 2
+        if energy != 0:
+            pos = pygame.mouse.get_pos()
+            self.rect.x = pos[0] - PLATFORM_WIDTH / 2
 
         # Ограничение платформы в пределах окна
         if self.rect.x < 0:
@@ -76,17 +78,21 @@ class Ball(pygame.sprite.Sprite):
         if self.rect.left <= 0:
             self.rect.left = 0
             self.speed_x *= -1
+            sound_punch.play()
         elif self.rect.right >= 1024:
             self.rect.right = 1024
             self.speed_x *= -1
+            sound_punch.play()
         if self.rect.top <= 0:
             self.rect.top = 0
             self.speed_y *= -1
+            sound_punch.play()
 
         # Отскок шарика от платформы
         if pygame.sprite.collide_rect(self, platform):
             if self.speed_y > 0:  # проверка направления движения шарика, чтобы избежать проваливания через платформу
                 self.speed_y = -self.speed_y
+                sound_punch.play()
 
         # Увеличение скорости каждые 30 секунд
         self.time_count += 1
@@ -117,6 +123,16 @@ class Block(pygame.sprite.Sprite):
 # Инициализация Pygame
 pygame.init()
 
+# Фоновая музыка
+pygame.mixer.music.load('background_music.mp3')
+pygame.mixer.music.play()
+
+# Звуки
+sound_punch = pygame.mixer.Sound('punch.mp3')
+sound_hit = pygame.mixer.Sound('hit.mp3')
+sound_good = pygame.mixer.Sound('good.mp3')
+sound_fail = pygame.mixer.Sound('fail.mp3')
+
 # Создание окна игры
 window = pygame.display.set_mode([WINDOW_WIDTH, WINDOW_HEIGHT])
 pygame.display.set_caption("Арканоид+")
@@ -137,7 +153,9 @@ all_sprites.add(ball)
 for row in range(10):
     for col in range(BLOCKS_PER_ROW):
         block = Block(col * BLOCK_WIDTH, row * BLOCK_HEIGHT,
-                      random.choice(['data/block.png', 'data/block_RED.png', 'data/block_WHITE.png']))
+                      random.choice(
+                          ['data/block.png', 'data/block_RED.png', 'data/block_RED.png', 'data/block_WHITE.png',
+                           'data/block_WHITE.png', 'data/block_WHITE.png']))
         all_sprites.add(block)
         blocks.add(block)
 
@@ -210,13 +228,16 @@ while running:
             selected_option = int(event.unicode)
             if selected_option == int(answer):
                 score += 1
+                energy += 5
                 print("Правильный ответ!")
                 question, options, answer = get_random_question()
                 display_question(question, options)
+                sound_good.play()
             else:
                 print("Неправильный ответ!")
                 question, options, answer = get_random_question()
                 display_question(question, options)
+                sound_fail.play()
 
         if event.type == KEYDOWN and event.key == K_ESCAPE:
             running = False
@@ -255,6 +276,7 @@ while running:
     collisions = pygame.sprite.spritecollide(ball, blocks, True)
     if collisions:
         ball.speed_y = -ball.speed_y
+        sound_hit.play()
 
     # Проверка окончания игры
     if ball.rect.y >= WINDOW_HEIGHT:
