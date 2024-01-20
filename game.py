@@ -12,17 +12,18 @@ os.environ["SDL_VIDEO_CENTERED"] = "1"
 WINDOW_WIDTH = 1408
 WINDOW_HEIGHT = 720
 GAME_ZONE = screen = pygame.display.set_mode((1024, 720))
-PLATFORM_WIDTH = 160
-PLATFORM_HEIGHT = 20
+PLATFORM_WIDTH = 104
+PLATFORM_HEIGHT = 24
 BALL_RADIUS = 10
 BLOCK_WIDTH = 64
 BLOCK_HEIGHT = 32
 BLOCKS_PER_ROW = (WINDOW_WIDTH // BLOCK_WIDTH) - 6
-max_speed = 8
+max_speed = 11
 seconds = 0
 mseconds = 0
 ENERGY_MAX = 100
 ENERGY_DECREASE_RATE = 1 / 60  # тк в 1 секунде 60 кадров
+xSpeed = 0
 
 # Цвета
 BLACK = (0, 0, 0)
@@ -72,6 +73,7 @@ class Ball(pygame.sprite.Sprite):
         self.speed_increase = 0.5
 
     def update(self):
+        global xSpeed
         # Обновление позиции шарика
         self.rect.x += self.speed_x
         self.rect.y += self.speed_y
@@ -102,12 +104,16 @@ class Ball(pygame.sprite.Sprite):
                 self.speed_x != max_speed or self.speed_x != -max_speed):  # 1800 кадров = 30 секунды (если кадры обновляются с частотой 60 кадров в секунду)
             if self.speed_x > 0:
                 self.speed_x += self.speed_increase
+                xSpeed += 0.5
             else:
                 self.speed_x -= self.speed_increase
+                xSpeed += 0.5
             if self.speed_y > 0:
                 self.speed_y += self.speed_increase
+                xSpeed += 0.5
             else:
                 self.speed_y -= self.speed_increase
+                xSpeed += 0.5
 
             self.time_count = 0
 
@@ -116,7 +122,7 @@ class Ball(pygame.sprite.Sprite):
 class Block_WHITE(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
-        self.image = pygame.image.load('data/asset/block_WHITE.png')  # загрузка картинки "block_GREEN.png"
+        self.image = pygame.image.load('data/asset/block_WHITE.png')
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
@@ -125,7 +131,7 @@ class Block_WHITE(pygame.sprite.Sprite):
 class Block_RED(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
-        self.image = pygame.image.load('data/asset/block_RED.png')  # загрузка картинки "block_GREEN.png"
+        self.image = pygame.image.load('data/asset/block_RED.png')
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
@@ -134,7 +140,7 @@ class Block_RED(pygame.sprite.Sprite):
 class Block_GREEN(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
-        self.image = pygame.image.load('data/asset/block_GREEN.png')  # загрузка картинки "block_GREEN.png"
+        self.image = pygame.image.load('data/asset/block_GREEN.png')
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
@@ -143,19 +149,54 @@ class Block_GREEN(pygame.sprite.Sprite):
 class Block_BLUE(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
-        self.image = pygame.image.load('data/asset/block_BLUE.png')  # загрузка картинки "block_GREEN.png"
+        self.image = pygame.image.load('data/asset/block_BLUE.png')
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
 
 
-class Block_YELLO(pygame.sprite.Sprite):
+class Block_YELLOW(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
-        self.image = pygame.image.load('data/asset/block_YELLOW.png')  # загрузка картинки "block_GREEN.png"
+        self.image = pygame.image.load('data/asset/block_YELLOW.png')
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
+
+
+class Block_VIOLET(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__()
+        self.image = pygame.image.load('data/asset/block_VIOLET.png')
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+
+
+class Particle(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__()
+        self.image = pygame.image.load("data/asset/particle.png").convert_alpha()
+        self.rect = self.image.get_rect()
+        self.rect.center = (x, y)
+        self.vx = random.choice([-1, 1]) * random.uniform(1, 5)  # Случайная скорость по оси X
+        self.vy = random.uniform(-5, -1)  # Случайная скорость по оси Y
+
+    def update(self):
+        self.rect.x += self.vx
+        self.rect.y += self.vy
+        self.vy += 0.2  # Гравитация
+        if not self.rect.colliderect(0, 0, 1010, 720):
+            self.kill()
+
+
+# Функция для создания частиц при соприкосновении спрайтов
+def create_particles(x, y, num_particles=10):
+    particles = pygame.sprite.Group()
+    for _ in range(num_particles):
+        particle = Particle(x, y)
+        particles.add(particle)
+    return particles
 
 
 # Инициализация Pygame
@@ -191,22 +232,26 @@ all_sprites.add(ball)
 # Создание блоков
 for row in range(10):
     for col in range(BLOCKS_PER_ROW):
-        block = random.randrange(0, 23)
-        if 0 <= block <= 10:
+        block = random.randrange(0, 30)
+        if 0 <= block <= 13:
             block = Block_WHITE(col * BLOCK_WIDTH, row * BLOCK_HEIGHT)
-        elif 10 < block <= 17:
+        elif 13 < block <= 20:
             block = Block_RED(col * BLOCK_WIDTH, row * BLOCK_HEIGHT)
-        elif 17 < block <= 20:
+        elif 20 < block <= 23:
             block = Block_GREEN(col * BLOCK_WIDTH, row * BLOCK_HEIGHT)
-        elif block == 21:
+        elif block == 24:
             block = Block_BLUE(col * BLOCK_WIDTH, row * BLOCK_HEIGHT)
-        elif block == 22:
-            block = Block_YELLO(col * BLOCK_WIDTH, row * BLOCK_HEIGHT)
+        elif block == 25:
+            block = Block_YELLOW(col * BLOCK_WIDTH, row * BLOCK_HEIGHT)
+        elif 25 < block <= 30:
+            block = Block_VIOLET(col * BLOCK_WIDTH, row * BLOCK_HEIGHT)
         all_sprites.add(block)
         blocks.add(block)
 
 # Создание фона
-background_image = pygame.image.load("data/asset/background.png")
+bi = random.choice(["data/asset/background1.png", "data/asset/background2.jpg", "data/asset/background3.png",
+                    "data/asset/background4.jpg", "data/asset/background5.jpg", "data/asset/background6.png"])
+background_image = pygame.image.load(bi)
 background_image = pygame.transform.scale(background_image, (1024, 720))
 GAME_ZONE.blit(background_image, (0, 0))
 
@@ -291,14 +336,14 @@ while running:
         if event.type == KEYDOWN and K_1 <= event.key <= K_4:
             selected_option = int(event.unicode)
             if selected_option == int(answer):
-                score += 1
+                score += 100
                 energy += 5
                 question_line1, question_line2, options, answer = get_random_question()
                 display_question(question_line1, question_line2, options)
                 sound_good.play()
             else:
-                score -= 1
-                energy -= 5
+                score -= 50
+                energy -= 3
                 question_line1, question_line2, options, answer = get_random_question()
                 display_question(question_line1, question_line2, options)
                 sound_fail.play()
@@ -322,7 +367,7 @@ while running:
         energy = 100
 
     if energy != 0:
-        platform.image = pygame.image.load('data/asset/platform_AKTIVE.png')  # загрузка картинки "block_GREEN.png"
+        platform.image = pygame.image.load('data/asset/platform_AKTIVE.png')
     else:
         platform.image = pygame.image.load('data/asset/platform_NONAKTIVE.png')
 
@@ -348,9 +393,39 @@ while running:
     # Проверка столкновения шарика с блоками
     collisions = pygame.sprite.spritecollide(ball, blocks, True)
     if collisions:
+        particles = create_particles(ball.rect.centerx, ball.rect.centery, num_particles=10)
+        all_sprites.add(particles)
         for block_class in collisions:
             if 'Block_WHITE' in str(block_class):
-                pass
+                score += 100
+            elif 'Block_RED' in str(block_class):
+                score += 200
+                energy -= 5
+            elif 'Block_GREEN' in str(block_class):
+                score += 150
+                energy += 10
+            elif 'Block_BLUE' in str(block_class):
+                score += 200
+                if ball.speed_x != max_speed or ball.speed_x != -max_speed:
+                    if ball.speed_x > 0:
+                        ball.speed_x += ball.speed_increase
+                        xSpeed += 0.5
+                    else:
+                        ball.speed_x -= ball.speed_increase
+                        xSpeed += 0.5
+                    if ball.speed_y > 0:
+                        ball.speed_y += ball.speed_increase
+                        xSpeed += 0.5
+                    else:
+                        ball.speed_y -= ball.speed_increase
+                        xSpeed += 0.5
+            elif 'Block_YEELOW' in str(block_class):
+                score += 250
+                energy = 100
+            elif 'Block_VIOLET' in str(block_class):
+                score += 150
+                question_line1, question_line2, options, answer = get_random_question()
+                display_question(question_line1, question_line2, options)
         ball.speed_y = -ball.speed_y
         sound_hit.play()
 
