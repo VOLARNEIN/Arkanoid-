@@ -104,16 +104,16 @@ class Ball(pygame.sprite.Sprite):
                 self.speed_x != max_speed or self.speed_x != -max_speed):  # 1800 кадров = 30 секунды (если кадры обновляются с частотой 60 кадров в секунду)
             if self.speed_x > 0:
                 self.speed_x += self.speed_increase
-                xSpeed += 0.5
+                xSpeed += 0.25
             else:
                 self.speed_x -= self.speed_increase
-                xSpeed += 0.5
+                xSpeed += 0.25
             if self.speed_y > 0:
                 self.speed_y += self.speed_increase
-                xSpeed += 0.5
+                xSpeed += 0.25
             else:
                 self.speed_y -= self.speed_increase
-                xSpeed += 0.5
+                xSpeed += 0.25
 
             self.time_count = 0
 
@@ -319,6 +319,10 @@ score = 0
 question_line1, question_line2, options, answer = get_random_question()
 display_question(question_line1, question_line2, options)
 
+energy_text = font.render(f"ШКАЛА ЭНЕРГИИ", True, BLACK)
+window.blit(energy_text,
+            (sx + swidth // 2 - energy_text.get_width() // 2, sy - 50))
+
 # Скрывать курсор мыши
 pygame.mouse.set_visible(False)
 
@@ -377,12 +381,21 @@ while running:
 
     # Изменение размеров прогресс-бара
     progress_width = int((energy / ENERGY_MAX) * swidth)
+    energy_count = font.render(f"{int(energy)}/100", True, WHITE)
+    window.blit(energy_count,
+                (sx + swidth // 2 - energy_count.get_width() // 2, sy + sheight // 2 - energy_count.get_height() // 2))
 
     # Отрисовка игровых объектов
     GAME_ZONE.blit(background_image, (0, 0))
     all_sprites.draw(GAME_ZONE)
     pygame.draw.rect(window, WHITE, (1034, 0, WINDOW_WIDTH, 60), 0)
     window.blit(time_surface, (1226 - time_surface.get_width() // 2, 40 - time_surface.get_height() // 2))
+
+    pygame.draw.rect(window, WHITE, (1034, 355, WINDOW_WIDTH, 150), 0)
+    score_count = font.render(f"СЧЁТ:                {score}", True, BLACK)
+    window.blit(score_count, (1034, 360))
+    xSpeed_count = font.render(f"СКОРОСТЬ:   х{xSpeed}", True, BLACK)
+    window.blit(xSpeed_count, (1034, 425))
 
     # Увеличение секунд и минут таймера
     mseconds += 1
@@ -409,19 +422,19 @@ while running:
                 if ball.speed_x != max_speed or ball.speed_x != -max_speed:
                     if ball.speed_x > 0:
                         ball.speed_x += ball.speed_increase
-                        xSpeed += 0.5
+                        xSpeed += 0.25
                     else:
                         ball.speed_x -= ball.speed_increase
-                        xSpeed += 0.5
+                        xSpeed += 0.25
                     if ball.speed_y > 0:
                         ball.speed_y += ball.speed_increase
-                        xSpeed += 0.5
+                        xSpeed += 0.25
                     else:
                         ball.speed_y -= ball.speed_increase
-                        xSpeed += 0.5
-            elif 'Block_YEELOW' in str(block_class):
+                        xSpeed += 0.25
+            elif 'Block_YELLOW' in str(block_class):
                 score += 250
-                energy = 100
+                energy = ENERGY_MAX
             elif 'Block_VIOLET' in str(block_class):
                 score += 150
                 question_line1, question_line2, options, answer = get_random_question()
