@@ -3,6 +3,7 @@ import pygame_menu
 from pygame_menu import themes
 import pygame.mixer
 import os
+import sys
 
 from pygame.locals import *
 
@@ -59,12 +60,13 @@ while True:
             if progress.get_value() == 100:
                 pygame.time.set_timer(update_loading, 0)
                 import game
+                sys.exit()
         if event.type == KEYDOWN and (event.key == K_DOWN or event.key == K_UP):
             sound_choice.play()
         if event.type == KEYDOWN and event.key == KSCAN_KP_ENTER:
             sound_pressing.play()
         if event.type == pygame.QUIT:
-            exit()
+            sys.exit()
 
     if main_menu.is_enabled():
         main_menu.update(events)

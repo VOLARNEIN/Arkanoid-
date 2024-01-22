@@ -3,6 +3,7 @@ import random
 import sqlite3
 import pygame.mixer
 import os
+import sys
 
 from pygame.locals import *
 
@@ -62,7 +63,7 @@ class Ball(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
         self.image = pygame.Surface([BALL_RADIUS * 2, BALL_RADIUS * 2])
-        self.image = pygame.image.load('data/asset/ball.png')  # загрузка картинки "block_GREEN.png"
+        self.image = pygame.image.load('data/asset/ball.png')
         self.rect = self.image.get_rect()
         self.rect.x = 1024 // 2
         self.rect.y = WINDOW_HEIGHT // 2
@@ -336,6 +337,7 @@ while running:
             pygame.mouse.set_visible(True)
             running = False
             import main
+            sys.exit()
 
         if event.type == KEYDOWN and K_1 <= event.key <= K_4:
             selected_option = int(event.unicode)
@@ -356,6 +358,7 @@ while running:
             pygame.mouse.set_visible(True)
             running = False
             import main
+            sys.exit()
 
     # Обновление спрайтов
     all_sprites.update()
@@ -447,6 +450,7 @@ while running:
         pygame.mouse.set_visible(True)
         running = False
         import main
+        sys.exit()
 
     # Обновление экрана
     pygame.display.update()
