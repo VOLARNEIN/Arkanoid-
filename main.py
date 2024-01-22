@@ -37,12 +37,18 @@ def settings():
     main_menu._open(setting)
 
 
+def rules():
+    main_menu._open(rules_)
+
+
 main_menu = pygame_menu.Menu('Добро пожаловать', 600, 400, theme=themes.THEME_DARK)
 main_menu.add.button('Играть', start_the_game)
 main_menu.add.button('Настройки', settings)
+main_menu.add.button('Правила', rules)
 main_menu.add.button('Выход', pygame_menu.events.EXIT)
 
 setting = pygame_menu.Menu('Настройки', 600, 400, theme=themes.THEME_DARK)
+rules_ = pygame_menu.Menu('Правила игры', 600, 400, theme=themes.THEME_DARK)
 
 loading = pygame_menu.Menu('Загрузка игры...', 600, 400, theme=themes.THEME_DARK)
 loading.add.progress_bar('Загрузка', progressbar_id="1", default=0, width=200, )
@@ -60,6 +66,7 @@ while True:
             if progress.get_value() == 100:
                 pygame.time.set_timer(update_loading, 0)
                 import game
+
                 sys.exit()
         if event.type == KEYDOWN and (event.key == K_DOWN or event.key == K_UP):
             sound_choice.play()
