@@ -324,9 +324,6 @@ energy_text = font.render(f"ШКАЛА ЭНЕРГИИ", True, BLACK)
 window.blit(energy_text,
             (sx + swidth // 2 - energy_text.get_width() // 2, sy - 50))
 
-# Скрывать курсор мыши
-pygame.mouse.set_visible(False)
-
 # Главный цикл игры
 running = True
 clock = pygame.time.Clock()
@@ -334,10 +331,7 @@ clock = pygame.time.Clock()
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            pygame.mouse.set_visible(True)
             running = False
-            import main
-            sys.exit()
 
         if event.type == KEYDOWN and K_1 <= event.key <= K_4:
             selected_option = int(event.unicode)
@@ -355,10 +349,8 @@ while running:
                 sound_fail.play()
 
         if event.type == KEYDOWN and event.key == K_ESCAPE:
-            pygame.mouse.set_visible(True)
+            print(f'Ваш результат: {score * xSpeed}')
             running = False
-            import main
-            sys.exit()
 
     # Обновление спрайтов
     all_sprites.update()
@@ -447,15 +439,59 @@ while running:
 
     # Проверка окончания игры
     if ball.rect.y >= WINDOW_HEIGHT:
-        pygame.mouse.set_visible(True)
+        print(f'Ваш результат: {score * xSpeed}')
         running = False
-        import main
-        sys.exit()
 
     # Обновление экрана
     pygame.display.update()
 
     # Ограничение частоты обновления экрана
+    clock.tick(60)
+
+window_width = 800
+window_height = 600
+
+# Создание окна
+window = pygame.display.set_mode((window_width, window_height))
+
+# Шрифт
+font = pygame.font.Font(None, 36)
+
+# Основной игровой цикл
+clock = pygame.time.Clock()
+game_over = False
+
+while not game_over:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            game_over = True
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            if button_rect.collidepoint(event.pos):
+                game_over = True
+                import main
+
+    window.fill(BLACK)
+
+    # Отрисовка надписи
+    text = font.render(f"Вы продержались {seconds:02} секунд",
+                       True, WHITE)
+    text_rect = text.get_rect(center=(window_width / 2, window_height / 2 - 25))
+    text2 = font.render(
+        f"Итоговый результат: {int(score * xSpeed * (energy / 100))}",
+        True, WHITE)
+    text_rect2 = text2.get_rect(center=(window_width / 2, window_height / 2 + 25))
+    window.blit(text, text_rect)
+    window.blit(text2, text_rect2)
+
+    # Отрисовка кнопки
+    button_text = font.render("Вернуться в главное меню", True, WHITE)
+    button_rect = button_text.get_rect(center=(window_width / 2, window_height - 50))
+    pygame.draw.rect(window, BLUE, button_rect, border_radius=10)
+    window.blit(button_text, button_rect)
+
+    pygame.display.flip()
+
+    # Ограничение количества кадров в секунду
     clock.tick(60)
 
 # Завершение игры
